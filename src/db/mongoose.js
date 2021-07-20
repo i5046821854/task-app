@@ -1,9 +1,10 @@
 const mongoose = require('mongoose')
-const validator = require('validator')
 
 mongoose.connect('mongodb://127.0.0.1:27017/task-manager-api', {
     useNewUrlParser: true,
-    useCreateIndex : true //몽구스가 몽고디비의 데이터의 인덱스에 빠르게 접근할 수 있음
+    useCreateIndex : true, //몽구스가 몽고디비의 데이터의 인덱스에 빠르게 접근할 수 있음
+    useFindAndModify : false,
+    useUnifiedTopology: true
 }) //connect to database
 
 // const User = mongoose.model('User', { //A model allows us to model something in the real world that we want to be able to store in the database. => collection을 자동으로 생성해줌 이름은 모델의 1 param을 소문자화시킨 것 
@@ -55,26 +56,26 @@ mongoose.connect('mongodb://127.0.0.1:27017/task-manager-api', {
 //     console.log("error" + error)
 // }) //인스턴스를 데이터베이스에 저장
 
- const tasks = mongoose.model('tasks', {
-    description:{ 
-        type: String,
-        required: true,
-        trim: true
-    },
-    completed: {
-        type: Boolean,
-        default: false
-    }
-})
+//  const tasks = mongoose.model('tasks', {
+//     description:{ 
+//         type: String,
+//         required: true,
+//         trim: true
+//     },
+//     completed: {
+//         type: Boolean,
+//         default: false
+//     }
+// })
 
-const task = new tasks(
-    {
-        description: "  doing the dish  ",
-    }
-)
+// const task = new tasks(
+//     {
+//         description: "  doing the dish  ",
+//     }
+// )
 
-task.save().then(()=>{
-    console.log(task)
-}).catch((error)=>{
-    console.log(error)
-})
+// task.save().then(()=>{
+//     console.log(task)
+// }).catch((error)=>{
+//     console.log(error)
+// })
