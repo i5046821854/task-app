@@ -2,6 +2,7 @@
 
 const express = require('express')
 const User = require('../models/users')
+const auth = require('../middleware/auth')
 const router = new express.Router() //create a router
 
 router.post("/users", async (req, res)=>{  //클라이언트가 post방식으로 서버에 요청할 떄 (클라이언트는 json형식으로 body에 데이터를 실어서 보냄)  / express는 async를 써도 리턴할 필요 없음
@@ -9,7 +10,8 @@ router.post("/users", async (req, res)=>{  //클라이언트가 post방식으로
     
     try{   //async로 선언된 콜백 함수를 핸들링하기 위한 await
         await user.save()
-        res.status(201).send(user)
+        const token = await user.generateAuthToken()  //회원가입 후 authentication token을 부여함
+        res.status(201).send({user, token})
     }catch(e) {
         res.status(400).send(e)
     }
@@ -24,7 +26,7 @@ router.post("/users", async (req, res)=>{  //클라이언트가 post방식으로
     // })
 })
 
-router.get('/users', async (req, res)=>{
+router.get('/users', auth, async (req, res)=>{  //2nd param에 미들웨어가 들어간다면 콜백 전에 미들웨어 함수가 실행됨
     
     try{
         const users = await User.find({})
@@ -39,6 +41,16 @@ router.get('/users', async (req, res)=>{
     //     res.status(500).send()  //internal server error /DB랑 연결이 안 되어있을 떄
     // })
 })
+
+router.get('/users/me', auth, async (req, res)=>{  //자신의 정보만 보여주기    
+    try{
+        res.send(req.user)  //auth.js에서 새로 저장한 
+    }catch(e){
+        res.status(500).send()
+    }
+
+})
+
 
 router.get('/users/:id', async(req,res)=>{  // url에다가 :xx 형식으로 써주면 뒤에 오는 모든 것들을 id라는 변수에 담아서 핸들링하겠다고 하는 것
     //req.params //{id : url에 id자리에 오는 실제 값} 형식으로 반환 
@@ -76,17 +88,35 @@ router.patch('/users/:id',async(req,res)=>{  //patch : update / 이전처럼 upd
         return res.status(400).send("error: invalid update")
     }
     try{
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-            new: true, //options.new=false «Boolean» By default, findByIdAndUpdate() returns the document as it was before update was applied. If you set new: true, findOneAndUpdate() will instead give you the object after update was applied.
-            runValidators: true, //고친 것이 validate한지 판별
-        }) //2nd param : 무엇으로 바꿀 것인지. 3rd param: 옵션 객체
+        // const user = await User.findByIdAndUpdate(req.params.id, req.body, {  //얘는 db에 직접 접근하므로 mongoose를 bypass함 
+        //     new: true, //options.new=false «Boolean» By default, findByIdAndUpdate() returns the document as it was before update was applied. If you set new: true, findOneAndUpdate() will instead give you the object after update was applied.
+        //     runValidators: true, //고친 것이 validate한지 판별 (findbyidandupdate는 몽구스를 거치지 않고 바로 db에 접근하니까)
+        // }) //2nd param : 무엇으로 바꿀 것인지. 3rd param: 옵션 객체
+
+        //미들웨어를 사용하기 위해 mongoose를 우회하지 않는 findById사용
+        const user = await User.findById(req.params.id)
+        updates.forEach((update)=>{
+            user[update] = req.body[update]   //user.update라고 쓸 수 없음. update 값은 동적으로 변하는 값이니까
+        })
+        await user.save()
         if(!user){
             return res.status(404).send()
         }
         res.send(user)
     }catch(e){
-        res.status(400).send()  //올바른 정보를 입력하지 않았을 떄
+        res.status(405).send(e)  //올바른 정보를 입력하지 않았을 떄
     }
+})
+
+router.post('/users/login', async(req,res)=>{ //이메일과 패스워드를 검사하면서 로그인
+    try{
+        const user = await User.findByCredentials(req.body.email, req.body.password)
+        const token = await user.generateAuthToken() //하나의 인스턴스(유저)에 대한 토큰 생성이니까 User가 아니고 user의 메소드
+        res.send({user, token})
+    }catch (e){
+        res.status(400).send(e)
+    }
+
 })
 
 router.delete('/users/:id', async (req,res)=>{  //지우기
