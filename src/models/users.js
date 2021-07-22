@@ -49,6 +49,20 @@ tokens: [
 ]  //유저가 발생시킨 토큰 (오브젝트들의 배열로 구성)
 })
 
+userSchema.methods.toJSON = function (){   //router/user.js 에서 res.send()에 오브젝트를 넣을 경우, 자동적으로 이를 JSON으로 변환해서 전송되는데, 이때 자동적으로 toJSON메소드가 호출됨 
+    const user = this
+    const userRAW = user.toObject() //몽구스가 제공하는 여러 함수 (save ... )들을 제외한 raw object만 가져옴
+    
+    delete userRAW.password //객체의 속성을 제거하는 delete연산자
+    delete userRAW.tokens
+
+    return userRAW  //결국 res에 담겨지는 객체는 기존 user의 정보에서 password와 token의 정보가 숨겨지고 나머지만 전송됨
+}
+
+        
+        
+
+
 userSchema.methods.generateAuthToken = async function(){
     const user = this
     const token = jwt.sign({_id : user._id.toString()}, 'thisismynewcourse')  //1st param: 토큰에 담을 데이터 / 2nd param 토큰의 식별자

@@ -119,6 +119,30 @@ router.post('/users/login', async(req,res)=>{ //이메일과 패스워드를 검
 
 })
 
+router.post('/users/logout', auth, async(req,res)=>{
+    try{
+        req.user.tokens = req.user.tokens.filter((token)=>{   //한 유저가 가지고 있는 모든 토큰 중 현재의 토큰만 삭제해서 다시 저장
+            return token.token !== req.token
+        })
+        await req.user.save()
+        res.send()
+    }catch(e){
+        res.status(500).send()
+    }
+
+})
+
+router.post('/users/logoutAll', auth, async(req,res)=>{
+
+    try{
+        req.user.tokens = []
+        await req.user.save()
+        res.send()
+    }catch(e){
+        res.status(500).send()
+    }
+})
+
 router.delete('/users/:id', async (req,res)=>{  //지우기
     try{
         const user = await User.findByIdAndDelete(req.params.id)
