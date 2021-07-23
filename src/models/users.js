@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const Task = require('./task')
 
 const userSchema = new mongoose.Schema({  //middleware의 함수들을 사용할 수 있도록 모델을 schema에 넣어줌
 name: {
@@ -49,6 +50,12 @@ tokens: [
 ]  //유저가 발생시킨 토큰 (오브젝트들의 배열로 구성)
 })
 
+userSchema.virtual('tasks', {  //실제 db에는 포함되지 않지만 특정한 처리를 하기 위해 가상으로 만들어지는 필드
+    ref: 'Task',  //어떤 모델이랑 연결할 것인가
+    localField: "_id", //유저에서 어떤 필드와
+    foreignField: "owner" //task에서 어떤 필드를 연결할 것인가
+})
+
 userSchema.methods.toJSON = function (){   //router/user.js 에서 res.send()에 오브젝트를 넣을 경우, 자동적으로 이를 JSON으로 변환해서 전송되는데, 이때 자동적으로 toJSON메소드가 호출됨 
     const user = this
     const userRAW = user.toObject() //몽구스가 제공하는 여러 함수 (save ... )들을 제외한 raw object만 가져옴
@@ -59,7 +66,6 @@ userSchema.methods.toJSON = function (){   //router/user.js 에서 res.send()에
     return userRAW  //결국 res에 담겨지는 객체는 기존 user의 정보에서 password와 token의 정보가 숨겨지고 나머지만 전송됨
 }
 
-        
         
 
 

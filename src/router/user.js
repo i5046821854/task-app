@@ -51,7 +51,7 @@ router.get('/users/me', auth, async (req, res)=>{  //자신의 정보만 보여�
 
 })
 
-
+ 
 router.get('/users/:id', async(req,res)=>{  // url에다가 :xx 형식으로 써주면 뒤에 오는 모든 것들을 id라는 변수에 담아서 핸들링하겠다고 하는 것
     //req.params //{id : url에 id자리에 오는 실제 값} 형식으로 반환 
    
@@ -75,6 +75,34 @@ router.get('/users/:id', async(req,res)=>{  // url에다가 :xx 형식으로 써
     // })
 })
 
+
+router.patch('/users/me',auth, async(req,res)=>{  //authenticated된 자신의 인스턴스 정보만 수정
+
+    console.log('hello')
+    const updates = Object.keys(req.body) //객체의 key들을 열거할 수 있는 배열로 반환합니다.
+    const allowedUpdated = ["name", 'email', 'password', 'age'] //바꿀수 있는 프로퍼티
+    const isValid = updates.every((update)=>{ // every() 메서드는 배열 안의 모든 요소가 주어진 판별 함수를 통과하는지 테스트합니다. Boolean 값을 반환합니다
+        return allowedUpdated.includes(update)
+        //어레이의 모든 엘리먼트를 대상으로 실행되는 콜백, 하나라도 false나오면 전체가false
+    })
+
+    if(!isValid){
+        return res.status(400).send("error: invalid update")
+    }
+    try{
+        const user = req.user
+        updates.forEach((update)=>{
+            user[update] = req.body[update]   //user.update라고 쓸 수 없음. update 값은 동적으로 변하는 값이니까
+        })
+        await user.save()
+        res.send(user)
+    }catch(e){
+        res.status(405).send(e)  //올바른 정보를 입력하지 않았을 떄
+    }
+    
+})
+
+
 router.patch('/users/:id',async(req,res)=>{  //patch : update / 이전처럼 update함수에 {}로 고칠 값을 주는 것이 아니라, http body에 고칠 것을 받고 이를 여기서 받아서 처리하는 형식으로
 
     const updates = Object.keys(req.body) //객체의 key들을 열거할 수 있는 배열로 반환합니다.
@@ -88,11 +116,6 @@ router.patch('/users/:id',async(req,res)=>{  //patch : update / 이전처럼 upd
         return res.status(400).send("error: invalid update")
     }
     try{
-        // const user = await User.findByIdAndUpdate(req.params.id, req.body, {  //얘는 db에 직접 접근하므로 mongoose를 bypass함 
-        //     new: true, //options.new=false «Boolean» By default, findByIdAndUpdate() returns the document as it was before update was applied. If you set new: true, findOneAndUpdate() will instead give you the object after update was applied.
-        //     runValidators: true, //고친 것이 validate한지 판별 (findbyidandupdate는 몽구스를 거치지 않고 바로 db에 접근하니까)
-        // }) //2nd param : 무엇으로 바꿀 것인지. 3rd param: 옵션 객체
-
         //미들웨어를 사용하기 위해 mongoose를 우회하지 않는 findById사용
         const user = await User.findById(req.params.id)
         updates.forEach((update)=>{
@@ -108,6 +131,7 @@ router.patch('/users/:id',async(req,res)=>{  //patch : update / 이전처럼 upd
     }
 })
 
+
 router.post('/users/login', async(req,res)=>{ //이메일과 패스워드를 검사하면서 로그인
     try{
         const user = await User.findByCredentials(req.body.email, req.body.password)
@@ -119,7 +143,7 @@ router.post('/users/login', async(req,res)=>{ //이메일과 패스워드를 검
 
 })
 
-router.post('/users/logout', auth, async(req,res)=>{
+router.post('/users/logout', auth, async(req,res)=>{  //현재 사용중인 토큰에 대한 로그아웃
     try{
         req.user.tokens = req.user.tokens.filter((token)=>{   //한 유저가 가지고 있는 모든 토큰 중 현재의 토큰만 삭제해서 다시 저장
             return token.token !== req.token
@@ -132,7 +156,7 @@ router.post('/users/logout', auth, async(req,res)=>{
 
 })
 
-router.post('/users/logoutAll', auth, async(req,res)=>{
+router.post('/users/logoutAll', auth, async(req,res)=>{  //한 계정으로 접근 중인 모든 세션에 대한 토큰 해제 (로그아웃)
 
     try{
         req.user.tokens = []
@@ -143,7 +167,19 @@ router.post('/users/logoutAll', auth, async(req,res)=>{
     }
 })
 
-router.delete('/users/:id', async (req,res)=>{  //지우기
+router.delete('/users/me',auth, async (req,res)=>{  //자신의 계정을 지우기
+    try{
+        // const user = await User.findByIdAndDelete(req.user._id) 
+        // return res.send(user)
+
+        await req.user.remove()  //위에와 동일한 역할을 함. 한 인스턴스를 지움
+        return res.send(req.user)
+    }catch(e){
+        res.status(500).send()
+    }
+}) 
+
+router.delete('/users/:id',auth, async (req,res)=>{  //아이디를 하나 지정해서 지우기
     try{
         const user = await User.findByIdAndDelete(req.params.id)
 

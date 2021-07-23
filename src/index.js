@@ -29,9 +29,18 @@ app.listen(port, ()=>{
 
 const jwt = require('jsonwebtoken')
 
-const myFunction = async()=>{
+const User = require('./models/users')
+const Task = require('./models/task')
+
+const main = async()=>{
+    const user = await User.findById()
+    await user.populate('tasks').execPopulate()
+    console.log(user.tasks)
+}
+main()
+/*const myFunction = async()=>{
    const token = jwt.sign({_id: 'adsa123'},"thisismycourse", {expiresIn: '7 days'})
    jwt.verify(token, "thisismycourse")   //맞다면 객체형식으로 토큰의 데이터 (sing 메소드으 1st param) 반환, 아니라면 에러)
 }
 
-myFunction()
+myFunction()*/

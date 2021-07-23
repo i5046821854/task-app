@@ -3,20 +3,26 @@
 
 const express = require('express')
 const Task = require('../models/task')
+const auth = require('../middleware/auth')
 const router = new express.Router()
 
-router.post("/tasks", async(req, res) => {
-    const task = new Task(req.body)
+router.post("/tasks", auth,  async(req, res) => {
+    //const task = new Task(req.body)
+    console.log(req.user._id)
+    const task = new Task({
+        ...req.body,   //...연산자를 쓰면서 req.body에 있는 모든 프로퍼티를 task에 옮겨줌
+        owner: req.user._id   //task를 만든 사용자의 id를 넣어줌
+    })
     try{
         await task.save()
         res.status(201).send(task)
     }catch(e){
-        res.status(400).send(error)
+        res.status(400).send(e)
     }
     // task.save().then(()=>{
     //     res.status(201).send(task)
     // }).catch((error)=>{
-    //     res.status(400).send(error)
+    //     res.status(400).send(e)
     // })
 })
 
