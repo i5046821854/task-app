@@ -26,10 +26,11 @@ router.post("/tasks", auth,  async(req, res) => {
     // })
 })
 
-router.get("/tasks", async(req, res)=>{
+router.get("/tasks", auth, async(req, res)=>{
     try{
-        const tasks = await Task.find({})
-        res.send(tasks) 
+        //const tasks = await Task.find({owner : req.user._id}) // 얘는 task에서 owner 프로퍼티를 사용
+        await req.user.populate('Tasks').execPopulate()  //위에 거랑 같은 결과 , 얘는 유저를 기준으로 task를 추출
+        res.send(req.user.Tasks) 
     }catch(e){res.status(500).send()}
     
     
@@ -40,10 +41,13 @@ router.get("/tasks", async(req, res)=>{
     // })
 })
 
-router.get("/tasks/:id", async(req, res) =>{
+router.get("/tasks/:id", auth, async(req, res) =>{
     const _id = req.params.id   //req.param을 통해 파라미터로 들어온 값을 object 형식으로 반환반음 / 여기서 id값을 추출하기 위해 params.id 형식으로 뽑아냄
     try{
-        const task = await Task.findById(_id)
+        //const task = await Task.findById(_id)
+        
+        const task = await Task.findOne({_id, owner: req.user._id}) //auth된 사용자의 task만 읽기
+
         if(!task)
             return res.status(404).send()
         return res.send(task)
@@ -62,7 +66,7 @@ router.get("/tasks/:id", async(req, res) =>{
     })
  
 })
-router.patch('/tasks/:id', async(req,res)=>{
+router.patch('/tasks/:id', auth,  async(req,res)=>{
     const updates = Object.keys(req.body)
     const allowedUpdates = ['description', 'completed']
     const isValid = updates.every((update)=>{
@@ -79,26 +83,30 @@ router.patch('/tasks/:id', async(req,res)=>{
         // runValidators: true,
         // })
         
-        const task = await Task.findById(req.params.id)
-        updates.forEach((update)=>{
-            task[update] = req.body[update]
-        })
+        //const task = await Task.findById(req.params.id)
+        const task = await Task.findOne({_id: req.params.id, owner: req.user._id}) //auth된 사용자의 task만 업데이트하기
         if(!task)
         {
             return res.status(400).send("no task for the id")
         }
+        updates.forEach((update)=>{
+            task[update] = req.body[update]
+            task.save()
+        })
+
         return res.send(task)
     }catch(e){
         return res.status(500).send("error: invalid")
     }
 })
 
-router.delete('/tasks/:id', async(req,res)=>{
+router.delete('/tasks/:id', auth, async(req,res)=>{
     try{
-        const task = await Task.findByIdAndDelete(req.params.id)
+       // const task = await Task.findByIdAndDelete(req.params.id)
+        const task = await Task.findOneAndDelete({_id: req.params.id, owner: req.user._id})   //auth된 사용자의 task만 지우기
         if(!task)
             return res.status(404).send()
-        return res.send(user)
+        return res.send(task)
     }catch(e)
     {
         res.status(500).send()

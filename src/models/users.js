@@ -3,7 +3,6 @@ const validator = require('validator')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const Task = require('./task')
-
 const userSchema = new mongoose.Schema({  //middleware의 함수들을 사용할 수 있도록 모델을 schema에 넣어줌
 name: {
     type: String,  //이 말고도 date, objectID, boolean 등이 있음
@@ -50,10 +49,10 @@ tokens: [
 ]  //유저가 발생시킨 토큰 (오브젝트들의 배열로 구성)
 })
 
-userSchema.virtual('tasks', {  //실제 db에는 포함되지 않지만 특정한 처리를 하기 위해 가상으로 만들어지는 필드
-    ref: 'Task',  //어떤 모델이랑 연결할 것인가
+userSchema.virtual('Tasks', {  //실제 db에는 포함되지 않지만 특정한 처리를 하기 위해 가상으로 만들어지는 필드
+    ref: 'tasks',  //어떤 모델이랑 연결할 것인가
     localField: "_id", //유저에서 어떤 필드와
-    foreignField: "owner" //task에서 어떤 필드를 연결할 것인가
+    foreignField: "owner" //task에서 어떤 필드를 연결할 것인가  >> 이러면 localfield의 값을 foreignfield에서 찾음
 })
 
 userSchema.methods.toJSON = function (){   //router/user.js 에서 res.send()에 오브젝트를 넣을 경우, 자동적으로 이를 JSON으로 변환해서 전송되는데, 이때 자동적으로 toJSON메소드가 호출됨 
@@ -65,8 +64,6 @@ userSchema.methods.toJSON = function (){   //router/user.js 에서 res.send()에
 
     return userRAW  //결국 res에 담겨지는 객체는 기존 user의 정보에서 password와 token의 정보가 숨겨지고 나머지만 전송됨
 }
-
-        
 
 
 userSchema.methods.generateAuthToken = async function(){
@@ -97,6 +94,12 @@ userSchema.pre('save', async function(next){  //.pre : 1st param(target event)�
     }
 
     next() //함수의 끝을 알리기 위한 next 함수 (없으면 더 이상 진행 안됨)
+})
+
+userSchema.pre('remove', async function(next){   //유저를 지울 때 그 실행 이전에 실행될 미들웨어에서 유저가 생성한 task를 지우는 과정
+    const user = this
+    await Task.deleteMany({owner: user._id})
+    next()
 })
 const User = mongoose.model('User', userSchema) //1 : 모델의 이름 2: 모델의 스키마
 

@@ -33,9 +33,13 @@ const User = require('./models/users')
 const Task = require('./models/task')
 
 const main = async()=>{
-    const user = await User.findById()
-    await user.populate('tasks').execPopulate()
-    console.log(user.tasks)
+    const task1 = await Task.findById("60fc24d9f0813042e4b39de6")
+    await task1.populate('owner').execPopulate()
+    //console.log(task1)
+    const user = await User.findById("60fc24c7f0813042e4b39dda")
+    await user.populate('Tasks').execPopulate()  //Task 프로퍼티를 ref에 있는 모델로 치환해서 출력
+    //console.log(user.Tasks)
+
 }
 main()
 /*const myFunction = async()=>{

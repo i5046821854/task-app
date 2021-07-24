@@ -171,8 +171,9 @@ router.delete('/users/me',auth, async (req,res)=>{  //자신의 계정을 지우
     try{
         // const user = await User.findByIdAndDelete(req.user._id) 
         // return res.send(user)
-
+        console.log('hello')
         await req.user.remove()  //위에와 동일한 역할을 함. 한 인스턴스를 지움
+        console.log('hellop')
         return res.send(req.user)
     }catch(e){
         res.status(500).send()
@@ -182,7 +183,6 @@ router.delete('/users/me',auth, async (req,res)=>{  //자신의 계정을 지우
 router.delete('/users/:id',auth, async (req,res)=>{  //아이디를 하나 지정해서 지우기
     try{
         const user = await User.findByIdAndDelete(req.params.id)
-
         if(!user)
             return res.status(404).send() 
         return res.send(user)

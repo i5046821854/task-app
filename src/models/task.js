@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
-const User = require('./users')
+
+
 const taskSchema = new mongoose.Schema({
     description:{ 
         type: String,
