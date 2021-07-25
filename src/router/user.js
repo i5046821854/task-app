@@ -4,6 +4,8 @@ const express = require('express')
 const User = require('../models/users')
 const auth = require('../middleware/auth')
 const router = new express.Router() //create a router
+const multer = require('multer')
+const { request } = require('express')
 
 router.post("/users", async (req, res)=>{  //클라이언트가 post방식으로 서버에 요청할 떄 (클라이언트는 json형식으로 body에 데이터를 실어서 보냄)  / express는 async를 써도 리턴할 필요 없음
     const user = new User(req.body) //user모델에 새로운 인스턴스를 추가해주되 그 인스턴스의 생성자에다가 req.body를 넣어줌
@@ -131,6 +133,32 @@ router.patch('/users/:id',async(req,res)=>{  //patch : update / 이전처럼 upd
     }
 })
 
+const avatar = multer({   //multer로 http req에서 파일을 추출하여 특정 공간에 저장할 미들웨어 생성
+    //dest: 'avatar',  ///파일들이 업로드되는 공간  / 여기서 dest를 선언하면 뒤에 router에서 avatar에 접근할 수 없으므로 유저 모델과 연결하기 힘들어짐 그래서 이 줄을 주석처리하면 avatar 폴더에 저장되지 않고 그대로 request.file에 실려 가게됨 
+    limits:{   //옵션 설정
+        fileSize: 1000000  //최대 파일 사이즈 (1mb)
+    },
+    fileFilter(req, file, callback){  //파일에 들어갈 여러 필터링을 위한 함수 1nd param: 리퀘스트, 2nd param : 파일, 3rd param: multer에게 필터링 작업이 끝났음을 알려주는 메소드 (next와 비슷)
+        if(!file.originalname.match(/\.(jpg|jpeg|png)$/)){ //확장자가 doc나 docx가 아닐 경우 (정규표현식으로 나타낸 것, endswith('doc')로 나타내도됨)
+            return callback(new Error('file must be a jpg'))
+        }
+        callback(undefined, true) //no error and accept the file
+    }
+})
+
+router.post('/users/me/avatar', auth, avatar.single('avatar'), async (req,res)=>{   //프로필 사진 추가를 위한 endponit, 2nd param은 미들웨어로서 http req에서 'avatar'라는 키값을 가진 파일을 dest에 저장
+    req.user.avatar = req.file.buffer // req.file is an object which contains all of those properties we explored before about the file and we're going to be using one called Buffer. Buffer contains a buffer of all of the binary data for that file and this is exactly what we want access to.  //얘는 multer에서 dest로 지정하지 않았을 경우에만 사용할 수 있음
+    await req.user.save()
+    res.send("OK")
+},(error, req, res, next)=>{  //에러 핸들링을 위한 콜백 (이 네가지 를 넣어줘야지 express에서 error handler로서 인식함)
+    res.status(404).send({error:error.message})
+})
+
+router.delete('/users/me/avatar', auth, async(req,res)=>{   //유저의 아바타 지우기
+    req.user.avatar = undefined
+    await req.user.save()
+    res.send("OK")
+})
 
 router.post('/users/login', async(req,res)=>{ //이메일과 패스워드를 검사하면서 로그인
     try{
@@ -171,9 +199,7 @@ router.delete('/users/me',auth, async (req,res)=>{  //자신의 계정을 지우
     try{
         // const user = await User.findByIdAndDelete(req.user._id) 
         // return res.send(user)
-        console.log('hello')
         await req.user.remove()  //위에와 동일한 역할을 함. 한 인스턴스를 지움
-        console.log('hellop')
         return res.send(req.user)
     }catch(e){
         res.status(500).send()

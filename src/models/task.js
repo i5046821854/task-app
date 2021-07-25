@@ -17,6 +17,8 @@ const taskSchema = new mongoose.Schema({
         required: true,
         ref: 'User', //reference to other models , 태스크와 이를 작성한 유저 간에 연관성을 맺어줌
     }
+}, { //2nd param : option
+    timestamps: true  // 업데이트 한 시간과 생성한 시간을 나타내줌
 })
 
 taskSchema.pre('save', async function(next){

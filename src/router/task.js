@@ -26,10 +26,49 @@ router.post("/tasks", auth,  async(req, res) => {
     // })
 })
 
+// router.get("/tasks", auth, async(req, res)=>{
+//     try{
+//         //const tasks = await Task.find({owner : req.user._id}) // 얘는 task에서 owner 프로퍼티를 사용
+//         await req.user.populate('Tasks').execPopulate()  //위에 거랑 같은 결과 , 얘는 유저를 기준으로 task를 추출
+//         res.send(req.user.Tasks) 
+//     }catch(e){res.status(500).send()}
+    
+    
+//     // Task.find().then((tasks)=>{
+//     //     res.send(tasks)
+//     // }).catch(()=>{
+//     //     res.status(500).send()
+//     // })
+// })
+
+//GET /tasks?completed=false 형식으로 쿼리스트링이 주어질 때
+//페이지네이션은 라우터에 옵션을 부여하는 형식으로 (url : GET /tasks?limit=2&skip=2)
+//sorting은 /tasks?sortBy=createdAt_desc or /tasks?sortBy=createdAt:desc 의 형식으로 필드에 대해 오름차순 / 내림차순 표현
 router.get("/tasks", auth, async(req, res)=>{
+    const match = {}   //match를 위한 객체 선언
+    const sort = {} //sort를 위한 객체 선언
+
+    if(req.query.completed)   //match를 하기 위해 url에 completed의 조건을 적어주었을 때
+    {
+        match.completed = (req.query.completed === 'true')  //쿼리 스트링에 적혀있는 true는 불리언이 아니라 스트링임. 그래서 문자열 비교 형식을 통해 match의 completed 프로퍼티에 넣어줌
+    }
+
+    if(req.query.sortBy)
+    {
+        const part = req.query.sortBy.split(':')
+        sort[part[0]] = (part[1] === 'asc'? 1 : -1)   //sort의 속성 값이 1일 경우 asc(오름차순), -1일 경우 desc(내림차순)임
+    }
+
     try{
-        //const tasks = await Task.find({owner : req.user._id}) // 얘는 task에서 owner 프로퍼티를 사용
-        await req.user.populate('Tasks').execPopulate()  //위에 거랑 같은 결과 , 얘는 유저를 기준으로 task를 추출
+        await req.user.populate({
+            path: 'Tasks',   //프로퍼티의 이름
+            match,   //표출할 속성값의 조건 (여기서는 match: match인데 shortcut형식으로 쓴것임)
+            options:{
+                limit: parseInt(req.query.limit),   //limit: 한 페이지에 표출할 레코드 수  / 쿼리 스트링은 스트링 형식이므로 이를 정수형으로 바꾸기 위해 parseInt()
+                skip: parseInt(req.query.skip),  //몇번째 레코드부터 보여줄 건지
+                sort //sort:sort이지만 shortcut으로 줄인 것임
+            } 
+        }).execPopulate()  //위에 거랑 같은 결과 , 얘는 유저를 기준으로 task를 추출
         res.send(req.user.Tasks) 
     }catch(e){res.status(500).send()}
     

@@ -46,7 +46,12 @@ tokens: [
             required: true
         }
     }
-]  //유저가 발생시킨 토큰 (오브젝트들의 배열로 구성)
+],  //유저가 발생시킨 토큰 (오브젝트들의 배열로 구성)
+avatar: {
+    type: Buffer //binary data들을 보관
+}
+}, {   //2nd param: option
+    timestamps: true   //생성 타임스탬프. 업데이트 타임 스탬프를 넣어줌 (default : false)
 })
 
 userSchema.virtual('Tasks', {  //실제 db에는 포함되지 않지만 특정한 처리를 하기 위해 가상으로 만들어지는 필드
