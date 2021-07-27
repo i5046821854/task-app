@@ -66,6 +66,7 @@ userSchema.methods.toJSON = function (){   //router/user.js 에서 res.send()에
     
     delete userRAW.password //객체의 속성을 제거하는 delete연산자
     delete userRAW.tokens
+    delete userRAW.avatar
 
     return userRAW  //결국 res에 담겨지는 객체는 기존 user의 정보에서 password와 token의 정보가 숨겨지고 나머지만 전송됨
 }
@@ -73,7 +74,7 @@ userSchema.methods.toJSON = function (){   //router/user.js 에서 res.send()에
 
 userSchema.methods.generateAuthToken = async function(){
     const user = this
-    const token = jwt.sign({_id : user._id.toString()}, 'thisismynewcourse')  //1st param: 토큰에 담을 데이터 / 2nd param 토큰의 식별자
+    const token = jwt.sign({_id : user._id.toString()}, process.env.secretKey)  //1st param: 토큰에 담을 데이터 / 2nd param 토큰의 식별자
     user.tokens = user.tokens.concat({token}) //기존 배열에 새 배열 아이템 추가하기
     await user.save()
     return token

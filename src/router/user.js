@@ -5,7 +5,7 @@ const User = require('../models/users')
 const auth = require('../middleware/auth')
 const router = new express.Router() //create a router
 const multer = require('multer')
-const { request } = require('express')
+const sharp = require('sharp')
 
 router.post("/users", async (req, res)=>{  //클라이언트가 post방식으로 서버에 요청할 떄 (클라이언트는 json형식으로 body에 데이터를 실어서 보냄)  / express는 async를 써도 리턴할 필요 없음
     const user = new User(req.body) //user모델에 새로운 인스턴스를 추가해주되 그 인스턴스의 생성자에다가 req.body를 넣어줌
@@ -147,7 +147,12 @@ const avatar = multer({   //multer로 http req에서 파일을 추출하여 특�
 })
 
 router.post('/users/me/avatar', auth, avatar.single('avatar'), async (req,res)=>{   //프로필 사진 추가를 위한 endponit, 2nd param은 미들웨어로서 http req에서 'avatar'라는 키값을 가진 파일을 dest에 저장
-    req.user.avatar = req.file.buffer // req.file is an object which contains all of those properties we explored before about the file and we're going to be using one called Buffer. Buffer contains a buffer of all of the binary data for that file and this is exactly what we want access to.  //얘는 multer에서 dest로 지정하지 않았을 경우에만 사용할 수 있음
+    
+    //req.user.avatar = req.file.buffer // req.file is an object which contains all of those properties we explored before about the file and we're going to be using one called Buffer. Buffer contains a buffer of all of the binary data for that file and this is exactly what we want access to.  //얘는 multer에서 dest로 지정하지 않았을 경우에만 사용할 수 있음
+    
+    const buffer = await sharp(req.file.buffer).resize({width: 250, height: 250}).png().toBuffer()  //sharp lib에 있는 함수는 async임. 버퍼에 있는 파일의 형식과 크기를 바꿔줌
+    req.user.avatar = buffer
+
     await req.user.save()
     res.send("OK")
 },(error, req, res, next)=>{  //에러 핸들링을 위한 콜백 (이 네가지 를 넣어줘야지 express에서 error handler로서 인식함)
@@ -169,6 +174,18 @@ router.post('/users/login', async(req,res)=>{ //이메일과 패스워드를 검
         res.status(400).send(e)
     }
 
+})
+
+router.get('/users/:id/avatar', async(req,res)=>{   //유저의 아바타를 확인
+    try{
+        const user = await User.findById(req.params.id)
+        if(!user || !user.avatar)   //해당하는 유저가 없거나 유저가 아바타를 가지고 있지 않은 경우
+            throw new Error("not found")
+        res.set('Content-Type', "image/png")  //http response의 속성을 설정, 원래의 content-type은 application/json으로 설정되어있어 만지지 않는다면 json 데이터가 전송됨
+        res.send(user.avatar)
+    }catch(e){
+        res.status(400).send(e)
+    }
 })
 
 router.post('/users/logout', auth, async(req,res)=>{  //현재 사용중인 토큰에 대한 로그아웃
