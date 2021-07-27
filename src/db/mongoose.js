@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
-mongoose.connect('mongodb://127.0.0.1:27017/task-manager-api', {
+//'mongodb://127.0.0.1:27017/task-manager-api'
+mongoose.connect(process.env.dbPath, {
     useNewUrlParser: true,
     useCreateIndex : true, //몽구스가 몽고디비의 데이터의 인덱스에 빠르게 접근할 수 있음
     useFindAndModify : false,
