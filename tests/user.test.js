@@ -52,3 +52,25 @@ test('read my profile', async()=>{
         .send()
         .expect(200)
 })
+
+test('not authorized to read', async()=>{
+    await request(app)
+    .get('/users/me')
+    .send()
+    .expect(401)
+})
+
+test('delete my profile', async()=>{
+    await request(app)
+    .delete('/users/me')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send()
+    .expect(200)
+})
+
+test('not authorizaed to delete', async()=>{
+    await request(app)
+    .delete('/users/me')
+    .send()
+    .expect(401)
+})
