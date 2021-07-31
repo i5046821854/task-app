@@ -80,7 +80,6 @@ router.get('/users/:id', async(req,res)=>{  // url에다가 :xx 형식으로 써
 
 router.patch('/users/me',auth, async(req,res)=>{  //authenticated된 자신의 인스턴스 정보만 수정
 
-    console.log('hello')
     const updates = Object.keys(req.body) //객체의 key들을 열거할 수 있는 배열로 반환합니다.
     const allowedUpdated = ["name", 'email', 'password', 'age'] //바꿀수 있는 프로퍼티
     const isValid = updates.every((update)=>{ // every() 메서드는 배열 안의 모든 요소가 주어진 판별 함수를 통과하는지 테스트합니다. Boolean 값을 반환합니다
